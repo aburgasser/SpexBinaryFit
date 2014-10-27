@@ -1,0 +1,131 @@
+# HELP FILE FOR SPEXBINARYFIT ROUTINE
+
+SPEXBINARYFIT
+Routine to match single and binary template spectra constructed from SpeX prism libraries
+Last updated 2014 February 11
+
+Basic usage:
+
+IDL> spexbinaryfit, 'filename'
+
+Here, 'filename' is either the full pathname to the spex prism data file or the filename assuming the file resides in the preset datafolder (see spexbinaryfit.pro to set this folder)
+
+ 
+Preset spectral type/absolute magnitude relations:
+
+IDL> spexbinaryfit, 'filename' 			; default is faint MKO K-band magnitude relation from Burgasser 2007
+IDL> spexbinaryfit, 'filename', /BUR07, /BRIGHT 	; bright MKO K-band magnitude relation from Burgasser 2007
+IDL> spexbinaryfit, 'filename', /LIU06, /FAINT 	; faint MKO K-band relation from Liu et al. 2008 (set /JMAG for J)
+IDL> spexbinaryfit, 'filename', /LIU06, /BRIGHT 	; bright MKO K-band relation from Liu et al. 2008 (set /JMAG for J)
+IDL> spexbinaryfit, 'filename', /LOO08 		; 2MASS Ks-band magnitude relation from Looper et al. 2008 (set /JMAG for J)
+IDL> spexbinaryfit, 'filename', /FAH12 		; MKO J-band magnitude relation from Faherty et al. 2012 (set /JMAG for J, /HMAG for H)
+ 
+ 
+Fitting options:
+
+IDL> spexbinaryfit, 'filename'			; default method = no weights, full spectrum
+IDL> spexbinaryfit, 'filename', /WEIGHT	; pixels weighted by pixel breadth, 
+						; computes G_k (see Cushing et al. 2008)
+; set the fitting regions; default is listed here
+IDL> spexbinaryfit, 'filename', FITREGIONS = [[0.95,1.35],[1.45,1.8],[2.0,2.35]]
+
+To set the relative magnitudes for scaling templates
+IDL> spexbinaryfit, 'filename', DELTAMAG=[0.2,0.4], E_DELTAMAG = [0.04,0.04], DELTAFILTER = [43,44], SIGMA=3
+
+where:
+ DELTAMAG = relative magnitudes of components
+ DELTAMAG_E = uncertainties in relative magnitudes
+ DELTAFILTER = filter numbers as defined in routine filtflux.pro
+ SIGMA = number of standard deviations that spectral pairs are permitted (= 3 if unspecified
+ 
+
+To set what kind of spectral types are used for templates:
+
+IDL> spexbinaryfit, 'filename'				; default: optlcal <L9, NIR otherwise
+IDL> spexbinaryfit, 'filename', /NIRSPT		; NIR spectral types only (reject templates without)
+IDL> spexbinaryfit, 'filename', /OPTSPT		; optical spectral types only (reject templates without)
+IDL> spexbinaryfit, 'filename', /SPEXSPT		; NIR spectral types from SpeX data based on methodology of Burgasser (2007)
+ 
+
+To reject unwanted template source(s) (including the target source) from fit:
+
+IDL> spexbinaryfit, 'filename', REJECT='0123-4545'
+
+or
+
+IDL> spexbinaryfit, 'filename', REJECT=['0123-4545', 'ROSS 458C']
+ 
+or to exclude input source
+
+IDL> spexbinaryfit, 'filename', NAME='0123-4545'
+ 
+
+To reject certain classes of templates:
+
+IDL> spexbinaryfit, 'filename', /ONLYYOUNG	; only young dwarfs
+IDL> spexbinaryfit, 'filename', /NOYOUNG	; no young dwarfs
+IDL> spexbinaryfit, 'filename', /ONLYSUBDWARFS	; only subdwarfs
+IDL> spexbinaryfit, 'filename', /NOSUBDWAFS	; no subdwarfs
+IDL> spexbinaryfit, 'filename', /ONLYRED	; only unusually red dwarfs
+IDL> spexbinaryfit, 'filename', /NORED		; no unusually red dwarfs
+IDL> spexbinaryfit, 'filename', /ONLYBLUE	; only unusually blue dwarfs
+IDL> spexbinaryfit, 'filename', /NOBLUE		; no unusually blue dwarfs
+
+ 
+To set range of primary or secondary spectral types to use:
+
+IDL> spexbinaryfit, 'filename', PSPTRANGE = [15,20], SSPTRANGE=[30,39]	
+
+Note that M0 = 10, L0 = 20, T0 = 30, etc.
+ 
+
+To do a single fit only:
+
+IDL> spexbinaryfit, 'filename', /SINGLE
+
+
+Optional outputs:
+
+To output a data structure for best fits (single fit only at this point)
+
+IDL> spexbinaryfit, 'filename', /SINGLE, OUTPUTSTR=structure
+ 
+To output spectra of best fits, with format [[wave],[flux]]
+
+IDL> spexbinaryfit, 'filename', BESTSINGLE=best, BESTBINARY=best
+ 
+
+If you are using a non-spex prism file for fitting:
+
+IDL> spexbinaryfit, 'filename', /SMOOTH
+ 
+
+Reporting options:
+
+IDL> spexbinaryfit, 'filename', FOLDER='path'		; folder in which to store program outputs (default is 'fits' folder in spexbinaryfit program folder)
+IDL> spexbinaryfit, 'filename', PREFIX='string'		; prefix for all program outputs (e.g., source name)
+IDL> spexbinaryfit, 'filename', /SHORT			; report only shortened template names (Jhhmm+ddmm)
+IDL> spexbinaryfit, 'filename', NBEST=10			; number of best-fit templates to report
+IDL> spexbinaryfit, 'filename', /FULL				; report all relative magnitudes (default is 2MASS & MKO)
+IDL> spexbinaryfit, 'filename', /MKO				; report some MKO relative magnitudes
+IDL> spexbinaryfit, 'filename', /NIRC2			; report some NIRC2 relative magnitudes
+IDL> spexbinaryfit, 'filename', /NICMOS			; report some NICMOS relative magnitudes
+IDL> spexbinaryfit, 'filename', /WFC3			; report some WFC3 relative magnitudes
+IDL> spexbinaryfit, 'filename', /INSET			; plot zoom in box of H-band region (for spectral binaries)
+IDL> spexbinaryfit, 'filename', /RIGHT			; place plot labels on right side of plot (by default they are on the right)
+IDL> spexbinaryfit, 'filename', NOTE='string'		; note to place on plot (e.g., source name)
+IDL> spexbinaryfit, 'filename', /EXTRAS			; plot separately source spectrum, best fit primary, best fit secondary (good for talks)
+IDL> spexbinaryfit, 'filename', /NOPLOT			; don't plot anything
+IDL> spexbinaryfit, 'filename', PCOLORS=[0,2,3,4]	; set the plot colors (tek_color palette, default indicated)
+IDL> spexbinaryfit, 'filename', LCOLORS=[0,2,3,0]	; set the label colors (tek_color palette, default indicated)
+IDL> spexbinaryfit, 'filename', XRANGE=[0.9,2.4] 	; set the horizontal range of plots (default indicated)
+IDL> spexbinaryfit, 'filename', YRANGE=[-0.02,1.45] 	; set the vertical range of plots (default indicated)
+
+
+To reinitialize the template sample:
+
+IDL> spexbinaryfit, /REGENERATE		; initializes the single templates
+IDL> spexbinaryfit, /RESET			; regenerates set of binary templates for a given absolute magnitude scale
+IDL> spexbinaryfit, /MAKE			; generates full suite of absolute magnitude scaled binaries based on all abs magnitude scales available
+
+
