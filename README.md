@@ -9,8 +9,8 @@ The code is based on the method of Burgasser et al. (2010, ApJ, 710, 1142: http:
 
 This code is best forked from this github site, and placed into a folder in your IDL path.  In the file spexbinaryfit.pro, set the following keywords:
 
-pfold = '/Users/adam/idl/spexbinaryfit/'		; folder that you downloaded spexbinaryfit into
-dfold = '/Users/adam/spectra/spex/prism/'		; default folder containing the data you are fitting (optional)
+ * pfold = '/Users/adam/idl/spexbinaryfit/'			; folder that you downloaded spexbinaryfit into
+ * dfold = '/Users/adam/spectra/spex/prism/'		; default folder containing the data you are fitting (optional)
 
 Please send bug reports to aburgasser@ucsd.edu or noting them on the github page ("Issues")
 
