@@ -6,7 +6,7 @@
 ; CREATED: 2014 Oct 27 (based on spexbinaryfit_library_binaries)
 ; -----------------------------------------------------------------------------------------------------
 
-db_primaries, db_secondaries, db_systems, calline=calline, savefile=savefile, nirspt=nirspt, optspt=optspt, spexspt=spexspt, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, jmag=jmag, hmag=hmag, kmag=kmag, deltamag=deltamag, e_deltamag = e_deltamag, deltafilter=deltafilter, sigma=sigma 
+db_primaries, db_secondaries, db_systems, calline=calline, savefile=savefile, nirspt=nirspt, optspt=optspt, spexspt=spexspt, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, fah16=fah16, young=young, jmag=jmag, hmag=hmag, kmag=kmag, deltamag=deltamag, e_deltamag = e_deltamag, deltafilter=deltafilter, sigma=sigma 
 
 on_error, 0
 
@@ -126,6 +126,36 @@ endif
 
 case 1 of
 
+; J (2MASS) Faherty et al. 2016 
+ (keyword_set(fah16) eq 1 and keyword_set(jmag) eq 1): begin 
+  calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-M6, '
+  calline = calline+'Using Faherty et al. (2016) M_J/SpT relation for M6-T9'
+  coeff = [-8.350e0,7.157e0,-1.058e0,7.771e-2,-2.684e-3,3.478e-5]
+  sptrng = [16.,39.]
+  fid = 7
+  sptoff = 10.
+ end
+
+; H (2MASS) Faherty et al. 2016 
+ (keyword_set(fah16) eq 1 and keyword_set(hmag) eq 1): begin 
+  calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-M6, '
+  calline = calline+'Using Faherty et al. (2016) M_H/SpT relation for M6-T9'
+  coeff = [-7.496e0,6.406e0,-9.174e-1,6.551e-2,-2.217e-3,2.841e-5]
+  sptrng = [16.,39.]
+  fid = 8
+  sptoff = 10.
+ end
+ 
+; Ks (2MASS) Faherty et al. 2016 
+ (keyword_set(fah16) eq 1 and keyword_set(jmag) eq 0 and keyword_set(hmag) eq 0): begin 
+  calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-M6, '
+  calline = calline+'Using Faherty et al. (2016) M_Ks/SpT relation for M6-T9'
+  coeff = [-6.704e0,5.970e0,-8.481e-1,5.978e-2,-1.997e-3,2.540e-5]
+  sptrng = [16.,39.]
+  fid = 9
+  sptoff = 10.
+ end
+ 
 ; J (MKO) Dupuy & Liu 2012 - for M6-T9
  (keyword_set(dup12) eq 1 and keyword_set(jmag) eq 1): begin 
   calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-M6, '
@@ -299,6 +329,24 @@ if (cnt gt 0) then begin
  wf = where(db_secondaries.filters eq fid)
  filters_used_s(w) = wf(0)
  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
+endif
+
+; young calibration for Faherty et al. 2016
+if keyword_set(young) then begin
+ if fid eq 7 then coeff = reverse([4.032e-3,-1.416e-1,2.097e0,8.478e-1])
+ if fid eq 8 then coeff = reverse([2.642e-3,-1.049e-1,1.753e0,1.207e0])
+ if fid eq 9 then coeff = reverse([-1.585e-2,7.338e-1,4.537e0])
+ sptoff = 10
+ w = where(refsptpn ge 17 and refsptpn le 27,cnt)
+ if (cnt gt 0) then begin
+  wf = where(db_primaries.filters eq fid)
+  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
+ endif
+ w = where(refsptsn ge 17 and refsptsn le 27,cnt)
+ if (cnt gt 0) then begin  
+  wf = where(db_secondaries.filters eq fid)
+  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
+ endif
 endif
 
 filters_used = [fid]

@@ -47,14 +47,17 @@
 ;	changed baseline plot colors to color blind friendly
 ;	fixed rejection procedure to actually reject
 ;	added Dupuy & Liu 2012 MKO JHK relations
+; 2014 Nov 22 (AJB)
+;	added Faherty et al. 2016 2MASS JHKs relations with additional "young" sequence
+;	fixed some errors
 ;
 ; TO DO
 ; - integrate external functions (see above)
 ; - add parameter input file to set presets
 ; - output template information file (in spexbinaryfit_library_singles)
+; - integrate with splat database
 ; -----------------------------------------------------------------------------------------------------
-
-prismfile, results, folder=folder, datafolder=datafolder, nbest=nbest, regenerate=regenerate, reset=reset, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, jmag=jmag, hmag=hmag, kmag=kmag, single=single, smooth=smooth, inset=inset, prefix=prefix, reject=reject, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, sigma=sigma, nirspt=nirspt, optspt=optspt, spexspt=spexspt, note=note, pcolors=pcolors, lcolors=lcolors, fitregions=fitregions, yrange=yrange, help=help, xrange=xrange, psptrange=psptrange, ssptrange=ssptrange, difference=difference, short=short, extras=extras, right=right, nonoise=nonoise, nfact=nfact, full=full, mko=mko, nicmos=nicmos, nirc2=nirc2, wfc3=wfc3, noyoung=noyoung, nosubdwarfs=nosubdwarfs, noblue=noblue, nored=nored, onlyyoung=onlyyoung, onlysubdwarfs=onlysubdwarfs, onlyblue=onlyblue, onlyred=onlyred, nocruz=nocruz, noplot=noplot, silent=silent, outputstr=outputstr, bestfitsingle=bestfitsingle, bestfitbinary=bestfitbinary, weight=weight, name=name, latex=latex, showdiff=showdiff
+prismfile, results, folder=folder, datafolder=datafolder, nbest=nbest, regenerate=regenerate, reset=reset, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, fah16=fah16, jmag=jmag, hmag=hmag, kmag=kmag, young=young, single=single, smooth=smooth, inset=inset, prefix=prefix, reject=reject, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, sigma=sigma, nirspt=nirspt, optspt=optspt, spexspt=spexspt, note=note, pcolors=pcolors, lcolors=lcolors, fitregions=fitregions, yrange=yrange, help=help, xrange=xrange, psptrange=psptrange, ssptrange=ssptrange, difference=difference, short=short, extras=extras, right=right, nonoise=nonoise, nfact=nfact, full=full, mko=mko, nicmos=nicmos, nirc2=nirc2, wfc3=wfc3, noyoung=noyoung, nosubdwarfs=nosubdwarfs, noblue=noblue, nored=nored, onlyyoung=onlyyoung, onlysubdwarfs=onlysubdwarfs, onlyblue=onlyblue, onlyred=onlyred, nocruz=nocruz, noplot=noplot, silent=silent, outputstr=outputstr, bestfitsingle=bestfitsingle, bestfitbinary=bestfitbinary, weight=weight, name=name, latex=latex, showdiff=showdiff
 
 ; ************************************************
 ; SETUP: YOU SHOULD ONLY NEED TO CHANGE THE FOLLOWING
@@ -81,7 +84,7 @@ suffix = ''
 calline = ''
 sptstring = append('M'+strtrim(string(indgen(10)),2),$
  append('L'+strtrim(string(indgen(10)),2),'T'+strtrim(string(indgen(10)),2)))
-templatesingfile = pfold+'/templates/templates_singles.dat'
+templatesingfile = pfold+'/templates_singles.dat'
 fitregions0 = [[0.95,1.35],[1.45,1.8],[2.,2.35]]
 
 time = systime(1)
@@ -434,7 +437,7 @@ db_primaries = db_singles
 db_secondaries = spexbinaryfit_mask_templates(db_original,secondaryrejflag)
 if (keyword_set(silent) eq 0) then print, 'Using '+strtrim(string(db_secondaries.ntemplates),2)+' secondary templates'
 
-spexbinaryfit_make_binaries, db_primaries, db_secondaries, db_binaries, jmag=jmag, hmag=hmag, kmag=kmag, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, faint=faint, bright=bright, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, nirspt=nirspt, optspt=optspt, spexspt=spexspt, sigma=sigma, calline=calline
+spexbinaryfit_make_binaries, db_primaries, db_secondaries, db_binaries, jmag=jmag, hmag=hmag, kmag=kmag, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, fah16=fah16, young=young, faint=faint, bright=bright, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, nirspt=nirspt, optspt=optspt, spexspt=spexspt, sigma=sigma, calline=calline
 
 
 ; CALCULATE MINIMUM DEVIATION BETWEEN SPECTRA WITH SCALING
