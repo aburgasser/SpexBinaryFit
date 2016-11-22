@@ -81,7 +81,7 @@ suffix = ''
 calline = ''
 sptstring = append('M'+strtrim(string(indgen(10)),2),$
  append('L'+strtrim(string(indgen(10)),2),'T'+strtrim(string(indgen(10)),2)))
-templatesingfile = pfold+'templates_singles.dat'
+templatesingfile = pfold+'/templates/templates_singles.dat'
 fitregions0 = [[0.95,1.35],[1.45,1.8],[2.,2.35]]
 
 time = systime(1)
@@ -103,6 +103,8 @@ if (keyword_set(weight)) then statstr='G!Dk!N' else statstr = '!9c!3!U2!N'
 if (keyword_set(difference) eq 1) then statstr = '!9s!3!U2!N'
 if (n_elements(psptrange) lt 2) then psptrange=[15.,40.]
 if (n_elements(ssptrange) lt 2) then ssptrange=[15.,40.]
+if (n_elements(pcolors) eq 0) then pcolors=[0,2,4,6,0,0]
+if (n_elements(lcolors) eq 0) then lcolors=[0,2,4,0,0,0]
 if (n_elements(nfact) eq 0) then nfact=0.05		; default noise scaling of 5%
 plotfitrange = fitregions
 ;normregions = fitregions
@@ -110,30 +112,80 @@ plotfitrange = fitregions
 ; REGENERATE SINGLE TEMPLATE LIBRARY IF NEEDED
 ; REQUIRES ACCESS TO ENTIRE LIBRARY
 ; fix this to also generate binary templates
+print, templatesingfile
 if (file_search(templatesingfile) eq '' or keyword_set(regenerate)) then begin
  spexbinaryfit_generate_library, dbfile=dbfile, datafolder=datafolder, pfold=pfold
 endif
 
- ; CHECK FOR  DATA FILE
+ ; PROCESS INPUT DATA
 DATA: if (n_elements(prismfile) eq 0) then goto, FINISH
-f = file_search(prismfile)
-if (f eq '') then begin
- f = file_search(datafolder+prismfile)
- if (f(0) eq '') then begin
-  print, 'SPEXBINARYFIT: Data file '+prismfile+' not found locally or in '+datafolder
-  goto, FINISH
- endif else prismfile = datafolder+prismfile
-endif
+sz = size(prismfile)
+case 1 of
 
-; READ IN DATA
-spec = spexbinaryfit_readspectrum(prismfile)
-lam_raw = spec(*,0)
-flx_raw = spec(*,1) 
-ns_raw = spec(*,2)
+; NORMAL FILE NAME
+ sz(n_elements(sz)-2) eq 7: begin
+  f = file_search(prismfile)
+  if (f eq '') then begin
+   f = file_search(datafolder+prismfile)
+   if (f(0) eq '') then begin
+    print, 'SPEXBINARYFIT: Data file '+prismfile+' not found locally or in '+datafolder
+    goto, FINISH
+   endif else prismfile = datafolder+prismfile
+  endif
+  spec = spexbinaryfit_readspectrum(prismfile)
+  lam_raw = spec(*,0)
+  flx_raw = spec(*,1)  
+  ns_raw = spec(*,2)
+ end
+
+; INPUT ARRAY
+ (sz(n_elements(sz)-2) eq 4 or sz(n_elements(sz)-2) eq 5) and sz(0) ge 2 : begin
+  lam_raw = prismfile(*,0)
+  flx_raw = prismfile(*,1)  
+  if (sz(2) gt 2) then ns_raw = prismfile(*,2) else ns_raw = flx_raw*0.
+ end
+ 
+; STRUCTURE
+ sz(n_elements(sz)-2) eq 8: begin
+  names = tag_names(prismfile)
+  w = where(strpos(names,'LAM') gt -1,cnt)
+  if cnt gt 0 then lam_raw = prismfile.(w(0))
+  w = where(strpos(names,'WAVE') gt -1,cnt)
+  if cnt gt 0 then lam_raw = prismfile.(w(0))
+  w = where(strpos(names,'FLX') gt -1,cnt)
+  if cnt gt 0 then flx_raw = prismfile.(w(0))
+  w = where(strpos(names,'FLUX') gt -1,cnt)
+  if cnt gt 0 then flx_raw = prismfile.(w(0))
+  w = where(strpos(names,'FLAM') gt -1,cnt)
+  if cnt gt 0 then flx_raw = prismfile.(w(0))
+  w = where(strpos(names,'NOISE') gt -1,cnt)
+  if cnt gt 0 then ns_raw = prismfile.(w(0))
+  w = where(strpos(names,'NS') gt -1,cnt)
+  if cnt gt 0 then ns_raw = prismfile.(w(0))
+  w = where(strpos(names,'ERR') gt -1,cnt)
+  if cnt gt 0 then ns_raw = prismfile.(w(0))
+  w = where(strpos(names,'UNC') gt -1,cnt)
+  if cnt gt 0 then ns_raw = prismfile.(w(0))
+  if (n_elements(lam_raw) eq 0) then begin
+    print, 'SPEXBINARYFIT: could not recognize wavelength array in input structure file; please use LAM or WAVE'
+    goto, FINISH
+  endif
+  if (n_elements(flx_raw) eq 0) then begin
+    print, 'SPEXBINARYFIT: could not recognize flux array in input structure file; please use FLUX or FLAM'
+    goto, FINISH
+  endif
+  if (n_elements(ns_raw) eq 0) then ns_raw = flx_raw*0.
+ end 
+
+ else: begin
+   print, 'SPEXBINARYFIT: could not recognize input; please use filename, data array or structure'
+   goto, FINISH
+ end
+endcase
 
 ; NOISE - if not present, or S/N <= 1 then assume 5% flux 
 if (total(ns_raw) eq 0. or median(ns_raw/flx_raw) ge 1.) then nonoise=1
-if ( keyword_set(nonoise)) then begin
+if (keyword_set(nonoise)) then begin
  if (n_elements(nfact) eq 0) then nfact = 0.05
  ns_raw = flx_raw*nfact
 endif
@@ -143,8 +195,8 @@ if (keyword_set(difference)) then ns_raw=ns_raw*0.+1.
 
 ; SMOOTH DATA IF DESIRED (not prism mode)
 if (keyword_set(smooth)) then begin
- deres2, law_raw, flx_raw, 120, flx_sm
- deres2, law_raw, ns_raw, 120, ns_sm
+ deres2, lam_raw, flx_raw, 120, flx_sm
+ deres2, lam_raw, ns_raw, 120, ns_sm
 endif else begin
  flx_sm = flx_raw
  ns_sm = ns_raw
@@ -193,7 +245,6 @@ case 1 of
  end
 endcase
 db_original = create_struct(db_singles,'refspt',refspt,'refsptn',refsptn)
-
 
 ; -----------------------------------------------
 ; TEMPLATE REJECTION 
@@ -269,7 +320,7 @@ if (keyword_set(noblue)) then begin
  wrejp = where(strpos(db_original.library,'blue') gt -1,cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrejp) = 1
-  secondaryrejflag(wrej) = 1
+  secondaryrejflag(wrejp) = 1
  endif
 endif
 
@@ -278,7 +329,7 @@ if (keyword_set(onlyblue)) then begin
  wrejp = where(strpos(db_original.library,'blue') eq -1,cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrejp) = 1
-  secondaryrejflag(wrej) = 1
+  secondaryrejflag(wrejp) = 1
  endif
 endif
 
@@ -287,16 +338,16 @@ if (keyword_set(nored)) then begin
  wrejp = where(strpos(db_original.library,'red') gt -1,cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrejp) = 1
-  secondaryrejflag(wrej) = 1
+  secondaryrejflag(wrejp) = 1
  endif
 endif
 
 ; REJECT ALL BUT RED DWARFS IF DESIRED
-if (keyword_set(nored)) then begin
+if (keyword_set(onlyred)) then begin
  wrejp = where(strpos(db_original.library,'red') eq -1,cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrejp) = 1
-  secondaryrejflag(wrej) = 1
+  secondaryrejflag(wrejp) = 1
  endif
 endif
 
@@ -305,7 +356,7 @@ if (keyword_set(nocruz)) then begin
  wrejp = where(db_original.data_reference eq 'CRU-NP',cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrejp) = 1
-  secondaryrejflag(wrej) = 1
+  secondaryrejflag(wrejp) = 1
  endif
 endif
 
@@ -348,7 +399,7 @@ for i=0,nbests-1 do begin
  if keyword_set(short) then labels(1) = [db_singles.shortname(ssing(i))+' '+db_singles.refspt(ssing(i))]
 
  if (keyword_set(noplot) eq 0) then $
-  spexbinaryfit_plot, stdlam, flx, db_singles.flux(*,ssing(i))*devsing(ssing(i),1), noise=nsp, labels=labels, pcolors = pcolors, lcolors=lcolors, yrange=yrange, outfile=folder+prefix+'singlefit_'+strtrim(string(i+1),2)+suffix+'.eps', inset=inset, xrange=xrange, plotfitrange=plotfitrange, right=right, showdiff=showdiff
+  spexbinaryfit_plot, stdlam, flx, db_singles.flux(*,ssing(i))*devsing(ssing(i),1), noise=nsp, labels=labels, pcolors = pcolors, lcolors=[0,2,0,0], yrange=yrange, outfile=folder+prefix+'singlefit_'+strtrim(string(i+1),2)+suffix+'.eps', inset=inset, xrange=xrange, plotfitrange=plotfitrange, right=right, showdiff=showdiff
 endfor
 
 ; create output structure and best fit variable
@@ -383,7 +434,7 @@ db_primaries = db_singles
 db_secondaries = spexbinaryfit_mask_templates(db_original,secondaryrejflag)
 if (keyword_set(silent) eq 0) then print, 'Using '+strtrim(string(db_secondaries.ntemplates),2)+' secondary templates'
 
-spexbinaryfit_make_binaries, db_primaries, db_secondaries, db_binaries, jmag=jmag, hmag=hmag, kmag=kmag, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, faint=faint, bright=bright, deltamag=dmag, e_deltamag=e_dmag, deltafilter=dfilter, nirspt=nirspt, optspt=optspt, spexspt=spexspt, sigma=sigma, calline=calline
+spexbinaryfit_make_binaries, db_primaries, db_secondaries, db_binaries, jmag=jmag, hmag=hmag, kmag=kmag, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, faint=faint, bright=bright, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, nirspt=nirspt, optspt=optspt, spexspt=spexspt, sigma=sigma, calline=calline
 
 
 ; CALCULATE MINIMUM DEVIATION BETWEEN SPECTRA WITH SCALING
@@ -396,7 +447,10 @@ nbestb = nbest < db_binaries.ntemplates
 
 devbin = spexbinaryfit_fitting(stdlam, flx, comp, noise=ns, dof=dof, weight=weight, fitregions=fitregions)
 if (keyword_set(difference)) then devbin(*,0) = 100.*devbin(*,0)
+del = fltarr(n_elements(devbin(*,0)))*1.
+if (n_elements(deltamag) gt 0) then del = 10.^(-0.4*(db_binaries.relmags(0,*)))
 sbin = sort(devbin(*,0))
+;stop
 
 
 ; F-TEST PROBABILITY THAT BEST BINARY IS A BETTER FIT THAN BEST SINGLE
@@ -432,7 +486,7 @@ for i=0,nbestb-1 do begin
 ; NOTE: REMOVED SCALING
   if (keyword_set(noplot) eq 0) then $
    spexbinaryfit_plot, stdlam, flx, db_binaries.primaries.flux(*,db_binaries.pairs(sbin(i),0))*devbin(sbin(i),1),$
-    db_binaries.secondaries.flux(*,db_binaries.pairs(sbin(i),1))*devbin(sbin(i),1), $  ; *10.^(-0.4*del),$
+    db_binaries.secondaries.flux(*,db_binaries.pairs(sbin(i),1))*devbin(sbin(i),1)*10.^(-0.4*del),$
     db_binaries.flux(*,sbin(i))*devbin(sbin(i),1), noise=nsp, labels=labels, pcolors = pcolors, lcolors=lcolors, $
     yrange=yrange, outfile=folder+prefix+'binaryfit_'+strtrim(string(i+1),2)+suffix+'.eps', inset=inset, $
     xrange=xrange, plotfitrange=plotfitrange, right=right, showdiff=showdiff
@@ -454,8 +508,8 @@ if (keyword_set(extras)) then begin
 
 ; plot just primary and secondary source fit
  spexbinaryfit_plot, stdlam, flx, db_binaries.primaries.flux(*,db_binaries.pairs(sbin(i),0))*devbin(sbin(i),1), $
-  db_binaries.secondaries.flux(*,db_binaries.pairs(sbin(i),1))*devbin(sbin(i),1)*10.^(-0.4*del),  noise=nsp,$
-  labels=['',labels(1:2)], pcolors = pcolors, lcolors=lcolors, yrange=yrange, $
+  db_binaries.secondaries.flux(*,db_binaries.pairs(sbin(i),1))*devbin(sbin(i),1)*del(sbin(i)),   $ *10.^(-0.4*del), $
+  noise=nsp,labels=['',labels(1:2)], pcolors = pcolors, lcolors=lcolors, yrange=yrange, $
   outfile=folder+prefix+'secondary_'+strtrim(string(i+1),2)+suffix+'.eps', inset=inset, xrange=xrange,$
   plotfitrange=plotfitrange, showdiff=showdiff
 
@@ -499,14 +553,14 @@ print, 'Number of orginal spectra used: '+strtrim(string(db_original.ntemplates)
 s = sort(db_singles.shortname)
 u = uniq(db_singles.shortname(s))
 print, ''
-print, 'Number of single/primary templates used: '+strtrim(string(db_binaries.primaries.ntemplates),2)+' spectra of '+strtrim(string(n_elements(u)),2)+' sources'
+print, 'Number of single templates used: '+strtrim(string(db_singles.ntemplates),2)+' spectra of '+strtrim(string(n_elements(u)),2)+' sources'
 if (keyword_set(single) eq 0) then begin
  s = sort(db_binaries.secondaries.shortname)
  u = uniq(db_binaries.secondaries.shortname(s))
  print, 'Number of secondary templates used: '+strtrim(string(db_binaries.secondaries.ntemplates),2)+' spectra of '+strtrim(string(n_elements(u)),2)+' sources'
  print, 'Number of binary templates used: '+strtrim(string(db_binaries.ntemplates),2)
  print, calline
-endif
+endif 
 print, 'Degrees of Freedom: '+strtrim(string(dof),2)
 print, 'Data saved to '+folder
 print, 'Processing time: '+strtrim(string(systime(1)-time),2)+' seconds'

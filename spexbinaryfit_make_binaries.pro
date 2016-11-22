@@ -84,6 +84,7 @@ if (n_elements(deltamag) ne 0 and n_elements(deltafilter) ne 0) then begin
     relmags(*,kkk+j) = db_secondaries.mags(*,w(j))-db_primaries.mags(*,i)
     offset = total((relmags(wfok,kkk+j)-deltamag)/(e_deltamag^2))/total(1./(e_deltamag)^2)
     relmags(*,kkk+j) = relmags(*,kkk+j) - offset
+;    db_secondaries.flux(*,w(j)) = db_secondaries.flux(*,w(j))
     hybflx(*,kkk+j) = db_primaries.flux(*,i)+db_secondaries.flux(*,w(j))*10.^(0.4*offset)	; primary + scaled secondary
     pairs(kkk+j,*) = [i,w(j)]
     if (max(abs(relmags(wfok,kkk+j)-deltamag)/e_deltamag) le sigma) then photflag(kkk+j) = 1
@@ -110,14 +111,18 @@ coeff = [-4.410,5.043,-0.6193,0.03453,-0.0006892]
 sptrng = [15,25.]
 fid = 7
 
-w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-wf = where(db_primaries.filters eq fid)
-filters_used_p(w) = wf(0)
-absmagsp(w) = poly(refsptpn(w)-10.,coeff)
-w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-wf = where(db_secondaries.filters eq fid)
-filters_used_s(w) = wf(0)
-absmagss(w) = poly(refsptsn(w)-10.,coeff)
+w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1),cnt)
+if (cnt gt 0) then begin
+ wf = where(db_primaries.filters eq fid)
+ filters_used_p(w) = wf(0) 
+ absmagsp(w) = poly(refsptpn(w)-10.,coeff)
+endif
+w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1),cnt)
+if (cnt gt 0) then begin 
+ wf = where(db_secondaries.filters eq fid)
+ filters_used_s(w) = wf(0)
+ absmagss(w) = poly(refsptsn(w)-10.,coeff)
+endif
 
 case 1 of
 
@@ -129,15 +134,6 @@ case 1 of
   sptrng = [16.,39.]
   fid = 41
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; H (MKO) Dupuy & Liu 2012 - for M6-T9
@@ -148,34 +144,16 @@ case 1 of
   sptrng = [16.,39.]
   fid = 42
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; K (MKO) Dupuy & Liu 2012 - for M6-T9
  (keyword_set(dup12) eq 1 and keyword_set(kmag) eq 1): begin 
   calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-M6, '
   calline = calline+'Using Dupuy & Liu (2012) M_K/SpT  relation for M6-T9'
-  coeff = [-1.52200e1,1.01248e1,-1.63930e0,1.351771-1,-5.84342e-3,1.25731e-4,-1.04935e-6]
+  coeff = [-1.52200e1,1.01248e1,-1.63930e0,1.351771e-1,-5.84342e-3,1.25731e-4,-1.04935e-6]
   sptrng = [16.,39.]
   fid = 41
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; J (MKO) Faherty et al. 2012 - for >L2
@@ -186,34 +164,16 @@ case 1 of
   sptrng = [22.,38.]
   fid = 41
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; H (MKO) Faherty et al. 2012 - for >L2
- (keyword_set(fah12) eq 1 and keyword_set(jmag) eq 1): begin 
+ (keyword_set(fah12) eq 1 and keyword_set(hmag) eq 1): begin 
   calline = 'Using Cruz et al. (2003) M_J/SpT relation for M5-L2, '
   calline = calline+'Using Faherty et al. (2012) M_H/SpT faint relation for L2-T8'
   coeff = [13.0639,-1.55464,0.223912,-0.0107219,0.000174458]
   sptrng = [22.,38.]
   fid = 42
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; K (MKO) Faherty et al. 2012 - for >L2
@@ -224,15 +184,6 @@ case 1 of
   sptrng = [22.,38.]
   fid = 43
   sptoff = 10.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
  ; J (2MASS) Looper et al. 2008 - for >L2
@@ -244,15 +195,6 @@ case 1 of
   sptrng = [22.,38.]
   fid = 7
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
  
 ; Ks (2MASS) Looper et al. 2008 - for >L2
@@ -264,15 +206,6 @@ case 1 of
   sptrng = [22.,38.]
   fid = 9
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
   
 ; J (MKO) Liu et al. 2006 "faint"- for >L5
@@ -284,15 +217,6 @@ case 1 of
   sptrng = [25.,38.]
   fid = 41
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
 
 ; J (MKO) Liu et al. 2006 "bright"-  for >L5
@@ -304,15 +228,6 @@ case 1 of
   sptrng = [25.,38.]
   fid = 41
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
 
 ; K (MKO) Liu et al. 2006 "faint"-  for >L5
@@ -324,15 +239,6 @@ case 1 of
   sptrng = [25.,38.]
   fid = 43
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
 
 ; K (MKO) Liu et al. 2006 "bright"-  for >L5
@@ -344,15 +250,6 @@ case 1 of
   sptrng = [25.,38.]
   fid = 43
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
 
 ; K (MKO) Burgasser 2007 - "bright" -  for >L5
@@ -369,15 +266,6 @@ case 1 of
   sptrng = [25.,38.]
   fid = 43
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
   
 ; K (MKO) Burgasser 2007 "faint" -  for >L5 - DEFAULT
@@ -395,18 +283,24 @@ case 1 of
   sptrng = [25.,38.]
   fid = 43
   sptoff = 20.
-
-  w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1))
-  wf = where(db_primaries.filters eq fid)
-  filters_used_p(w) = wf(0)
-  absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
-  w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1))
-  wf = where(db_secondaries.filters eq fid)
-  filters_used_s(w) = wf(0)
-  absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
  end
 
 endcase
+
+; apply filter
+w = where(refsptpn ge sptrng(0) and refsptpn le sptrng(1),cnt)
+if (cnt gt 0) then begin
+ wf = where(db_primaries.filters eq fid)
+ filters_used_p(w) = wf(0)
+ absmagsp(w) = poly(refsptpn(w)-sptoff,coeff)
+endif
+w = where(refsptsn ge sptrng(0) and refsptsn le sptrng(1),cnt)
+if (cnt gt 0) then begin  
+ wf = where(db_secondaries.filters eq fid)
+ filters_used_s(w) = wf(0)
+ absmagss(w) = poly(refsptsn(w)-sptoff,coeff)
+endif
+
 filters_used = [fid]
 
 ; SCALE THE SPECTRA
