@@ -1,5 +1,5 @@
 ;------------------------------------------------------------------------
-function SPEXBINARYFIT_FILTFLUX,
+function SPEXBINARYFIT_FILTFLUX, $
 ;
 ; purpose: computes magnite flux from a spectrum using library of filter
 ;   passbands and spectrum of vega
@@ -48,7 +48,7 @@ function SPEXBINARYFIT_FILTFLUX,
 ;   10/27/14 ported to spexbinaryfit_filtflux
 ;------------------------------------------------------------------------
 
-lambda, flux, filter, units, info=info, $
+ lambda, flux, filter, units, info=info, $
  silent=silent, photons=photons, energy=energy, ab=ab, force=force, $
  mean=mean, profile=profile, filtfolder=filtfolder
 
