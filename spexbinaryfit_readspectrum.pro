@@ -26,6 +26,8 @@ file_format = tmp(n_elements(tmp)-1)
 if (strpos(file_format,'fit') ge 0) then $
  fits_read, file, data, header else $
  data = readarr(file,/comment,/flt,/space)
+; transpose if necessary
+if n_elements(data(0,*)) gt 5 then data = transpose(data)
 lam = data(*,0)
 flx = data(*,1)
 if (n_elements(data(0,*)) gt 2) then noise = data(*,2) else noise = abs(flx*snscl)

@@ -11,7 +11,7 @@
 ; - add output of template information to latex table
 ; -----------------------------------------------------------------------------------------------------
 
-savefile, pfold=pfold, dbfile=dbile, datafolder=datafolder
+savefile, pfold=pfold, dbfile=dbile, datafolder=datafolder, usesplat=usesplat, splatfolder=splatfolder, newobs=newobs
 
 on_error, 0
 
@@ -28,11 +28,11 @@ f=''
 
 ; CHECK INPUT PARAMETERS
 if (n_elements(pfold) eq 0) then pfold = '/Users/adam/idl/spexbinaryfit/'
-if (n_elements(dbfile) eq 0) then dbfile = '/Users/adam/web/browndwarfs/spexprism/db/db_spexprism.txt'
+if (n_elements(dbfile) eq 0) then dbfile = pfold+'db_spexprism.txt'
 if (n_elements(datafolder) eq 0) then datafolder = '/Users/adam/spectra/spex/prism/'
-savefile = pfold+'templates/template_singles.dat'
-plotfile = pfold+'templates/templates_singles.ps'
-latexfle = pfold+'templates/templates_unpublished.tex'
+savefile = pfold+'/templates_singles.dat'
+plotfile = pfold+'/templates_singles.ps'
+latexfile = pfold+'/templates.tex'
 
 ; FILTERS USED FOR SOURCE MAGNITUDES
 ; 2MASS JHKs, MKO JHKKsKp, WFCAM Y, 
@@ -52,8 +52,64 @@ s = sort(filters)
 filters = filters(s)
 filter_names = filter_names(s)
 
-; read in spex prism database file
-READDB: db = spexbinaryfit_readstruct(dbfile)
+; IMPORT LIBRARIES FROM SPLAT
+if keyword_set(usesplat) or n_elements(splatfolder) ne 0 then begin
+ if (n_elements(splatfolder) eq 0) then splatfolder = getenv('SPLAT_PATH')
+ if splatfolder eq '' then message, 'Attempted to build library from SPLAT database but environment variable SPLAT_PATH not found'
+ if file_search(splatfolder) eq '' then message, 'Cannot find SPLAT database folder '+splatfolder
+ datafolder = splatfolder+'/reference/Spectra/'
+ print, 'Using the SPLAT repository to generate single templates'
+ 
+; read in source and data files
+ db_src = spexbinaryfit_readstruct(splatfolder+'db/source_data.txt')
+ db_spec = spexbinaryfit_readstruct(splatfolder+'db/spectral_data.txt')
+
+; merge in select elements of source database
+ name = strarr(n_elements(db_spec.data_key))
+ designation = strarr(n_elements(db_spec.data_key))
+ opt_type = strarr(n_elements(db_spec.data_key))
+ optical_reference = strarr(n_elements(db_spec.data_key))
+ nir_type = strarr(n_elements(db_spec.data_key))
+ nir_reference = strarr(n_elements(db_spec.data_key))
+ discovery_reference = strarr(n_elements(db_spec.data_key))
+ library = strarr(n_elements(db_spec.data_key))
+ jmag = strarr(n_elements(db_spec.data_key))
+ hmag = strarr(n_elements(db_spec.data_key))
+ kmag = strarr(n_elements(db_spec.data_key))
+ for i=0,n_elements(db_spec.data_key)-1 do begin
+  w = where(db_src.SOURCE_KEY eq db_spec.SOURCE_KEY(i),cnt)
+  if (cnt gt 0) then begin
+   name(i) = db_src.NAME(w(0))
+   designation(i) = db_src.DESIGNATION(w(0))
+   opt_type(i) = db_src.OPT_TYPE(w(0))
+   optical_reference(i) = db_src.OPT_TYPE_REF(w(0))
+   nir_type(i) = db_src.NIR_TYPE(w(0))
+   nir_reference(i) = db_src.NIR_TYPE_REF(w(0))
+   discovery_reference(i) = db_src.DISCOVERY_REFERENCE(w(0))
+   jmag(i) = db_src.J_2MASS(w(0))
+   hmag(i) = db_src.H_2MASS(w(0))
+   kmag(i) = db_src.KS_2MASS(w(0))
+   library(i) = db_src.LIBRARY(w(0))
+   if strpos(db_src.LUMINOSITY_CLASS(w(0)),'I') gt -1 then library(i)=library(i)+'giant '
+   if db_src.GRAVITY_CLASS_OPTICAL(w(0)) ne '' then library(i)=library(i)+'young '
+   if db_src.GRAVITY_CLASS_NIR(w(0)) eq 'VL-G' or db_src.GRAVITY_CLASS_NIR(w(0)) eq 'INT-G' or db_src.GRAVITY_CLASS_NIR(w(0)) eq 'LOW-G' then library(i)=library(i)+'young '
+   if db_src.BINARY(w(0)) eq 'Y' then library(i)=library(i)+'binary '
+   if db_src.SBINARY(w(0)) eq 'Y' then library(i)=library(i)+'sbinary '
+  endif
+  if db_spec.PUBLISHED(i) eq 'N' then db_spec.DATA_REFERENCE(i)=db_spec.DATA_REFERENCE(i)+'-NP'
+ endfor   
+ 
+; generate combined database file with proper keywords
+ db = create_struct(db_spec,$
+  'name',name,'designation',designation,'opt_type',opt_type,'optical_reference',optical_reference,$
+  'nir_type',nir_type,'nir_reference',nir_reference,'discovery_reference',discovery_reference,$
+  'jmag',jmag,'hmag',hmag,'kmag',kmag,'library',library,'snr',db_spec.median_snr)
+
+; read in default spex prism database file
+endif else begin
+ print, 'Using database file '+dbfile+' to generate templates'
+ db = spexbinaryfit_readstruct(dbfile)
+endelse
 
 ; set numeric spectral types and shortnames - nir sptn for no optical classification or >=L9
 db = create_struct(db,$
@@ -74,11 +130,8 @@ db.sptn(w) = db.nsptn(w)
 
 ; set templates: SpT >= M4, no poor data, no binaries, no giants, no subdwarfs
  wtemplate = where($
-;  strupcase(db.template) eq 'Y' and $		; already selected as possible template - NOW OFF
   db.quality_flag eq 'OK' and $				; good spectra
-  db.data_reference ne 'KIR-NP' and $		; no unpublished Kirkpatrick spectra
-  db.data_reference ne 'CRU-NP' and $		; no unpublished Cruz spectra
-  strpos(db.discovery_reference,'-NP') eq -1 and $	; no "unreported" sources 
+  strpos(db.data_reference,'-NP') eq -1 and $	; no unpublished sources 
   strpos(db.opt_type,'galaxy') eq -1 and $		; not a galaxy
   strpos(db.nir_type,'galaxy') eq -1 and $		
   strpos(db.opt_type,'WD') eq -1 and $		; not a white dwarf
@@ -86,10 +139,12 @@ db.sptn(w) = db.nsptn(w)
   strpos(db.opt_type,'B') eq -1 and $			; not a B star
   strpos(db.opt_type,'C') eq -1 and $			; not a carbon star
   strpos(db.opt_type,'K') eq -1 and $			; not a K star
-  strpos(db.library,'giant') eq -1 and $		; not a giant
+  strpos(db.library,'giant') eq -1 and $			; not a giant
   strpos(db.library,'binary') eq -1 and $		; not a binary or spectral binary (candidate)
   strlen(db.designation) gt 10 and $			; full designation
-  db.sptn ge 15. and db.sptn le 39.,ntemplates)				; M5 <= SpT <= T9
+  db.sptn ge 15. and db.sptn le 40.,ntemplates)				; M5 <= SpT <= Y0
+
+ print, 'Selecting '+strtrim(string(ntemplates),2)+' from '+strtrim(string(n_elements(db_spec.data_file)),2)+' original spectra'
 
 ; READ IN DATA AND NORMALIZE
 ; set up a structure for just the template sources
@@ -97,7 +152,6 @@ db_singles = create_struct('ntemplates',ntemplates)
 names = tag_names(db)
 for i=0, n_elements(names)-1 do db_singles = create_struct(db_singles,names[i],db.(i)[wtemplate])
 
-print, ' Number of single templates: '+strtrim(string(ntemplates),2)
 stdmags = fltarr(n_elements(filters),ntemplates)
 spex_sptn = fltarr(ntemplates)
 spex_sptn_e = fltarr(ntemplates)
@@ -110,10 +164,10 @@ if (n_elements(plotfile) ne 0) then begin
  !p.multi=[0,2,2]
 endif
 
-; print out a latexfile of unpublished templates
+; print out a latex table
 if (n_elements(latexfile) ne 0) then begin
  s = sort(db.designation(wtemplate)+db.name(wtemplate)+db.observation_date(wtemplate))
- spexbinaryfit_latextable, db, latexfile, index=wtemplate(s), title='SpeX Spectral Templates'
+ spexbinaryfit_latextable, db, latexfile, index=wtemplate(s), title='SpeX Spectral Templates', /standalone, /newobs
 endif
 
 ; READ IN SPECTRA, FLUX CALIBRATE, ASSIGN MAGNITUDES & PLOT
