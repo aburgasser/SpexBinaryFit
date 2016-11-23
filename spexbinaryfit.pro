@@ -57,7 +57,7 @@
 ; - output template information file (in spexbinaryfit_library_singles)
 ; - integrate with splat database
 ; -----------------------------------------------------------------------------------------------------
-prismfile, results, folder=folder, datafolder=datafolder, nbest=nbest, regenerate=regenerate, reset=reset, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, fah16=fah16, jmag=jmag, hmag=hmag, kmag=kmag, young=young, single=single, smooth=smooth, inset=inset, prefix=prefix, reject=reject, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, sigma=sigma, nirspt=nirspt, optspt=optspt, spexspt=spexspt, note=note, pcolors=pcolors, lcolors=lcolors, fitregions=fitregions, yrange=yrange, help=help, xrange=xrange, psptrange=psptrange, ssptrange=ssptrange, difference=difference, short=short, extras=extras, right=right, nonoise=nonoise, nfact=nfact, full=full, mko=mko, nicmos=nicmos, nirc2=nirc2, wfc3=wfc3, noyoung=noyoung, nosubdwarfs=nosubdwarfs, noblue=noblue, nored=nored, onlyyoung=onlyyoung, onlysubdwarfs=onlysubdwarfs, onlyblue=onlyblue, onlyred=onlyred, nocruz=nocruz, noplot=noplot, silent=silent, outputstr=outputstr, bestfitsingle=bestfitsingle, bestfitbinary=bestfitbinary, weight=weight, name=name, latex=latex, showdiff=showdiff
+prismfile, results, folder=folder, datafolder=datafolder, nbest=nbest, regenerate=regenerate, reset=reset, bright=bright, faint=faint, liu06=liu06, bur07=bur07, loo08=loo08, fah12=fah12, dup12=dup12, fah16=fah16, jmag=jmag, hmag=hmag, kmag=kmag, young=young, single=single, smooth=smooth, inset=inset, prefix=prefix, reject=reject, deltamag=deltamag, e_deltamag=e_deltamag, deltafilter=deltafilter, sigma=sigma, nirspt=nirspt, optspt=optspt, spexspt=spexspt, note=note, pcolors=pcolors, lcolors=lcolors, fitregions=fitregions, yrange=yrange, help=help, xrange=xrange, psptrange=psptrange, ssptrange=ssptrange, difference=difference, short=short, extras=extras, right=right, nonoise=nonoise, nfact=nfact, full=full, mko=mko, nicmos=nicmos, nirc2=nirc2, wfc3=wfc3, noyoung=noyoung, nosubdwarfs=nosubdwarfs, noblue=noblue, nored=nored, onlyyoung=onlyyoung, onlysubdwarfs=onlysubdwarfs, onlyblue=onlyblue, onlyred=onlyred, nocruz=nocruz, noplot=noplot, silent=silent, outputstr=outputstr, bestfitsingle=bestfitsingle, bestfitbinary=bestfitbinary, weight=weight, name=name, latex=latex, showdiff=showdiff, usesplat=usesplat, splatfolder=splatfolder
 
 ; ************************************************
 ; SETUP: YOU SHOULD ONLY NEED TO CHANGE THE FOLLOWING
@@ -115,9 +115,8 @@ plotfitrange = fitregions
 ; REGENERATE SINGLE TEMPLATE LIBRARY IF NEEDED
 ; REQUIRES ACCESS TO ENTIRE LIBRARY
 ; fix this to also generate binary templates
-print, templatesingfile
 if (file_search(templatesingfile) eq '' or keyword_set(regenerate)) then begin
- spexbinaryfit_generate_library, dbfile=dbfile, datafolder=datafolder, pfold=pfold
+ spexbinaryfit_generate_library, dbfile=dbfile, datafolder=datafolder, pfold=pfold, usesplat=usesplat, splatfolder=splatfolder
 endif
 
  ; PROCESS INPUT DATA
@@ -291,9 +290,9 @@ if (keyword_set(noyoung)) then begin
  endif
 endif
 
-; REJECT ALL BUT YOUNG SOURCES IF DESIRED
+; REJECT ALL BUT YOUNG M AND L DWARFS IF DESIRED
 if (keyword_set(onlyyoung)) then begin
- wrej = where(strpos(db_original.library,'young') eq -1,cntrej)
+ wrej = where(strpos(db_original.library,'young') eq -1 and db_original.refsptn ge 17 and db_original.refsptn le 27,cntrej)
  if (cntrej gt 0) then begin
   singlerejflag(wrej) = 1
   secondaryrejflag(wrej) = 1

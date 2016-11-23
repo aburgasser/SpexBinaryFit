@@ -2,7 +2,7 @@
 
 SPEXBINARYFIT
 Routine to match single and binary template spectra constructed from SpeX prism libraries
-Last updated 2014 February 11
+Last updated 2016 November 22
 
 Basic usage:
 

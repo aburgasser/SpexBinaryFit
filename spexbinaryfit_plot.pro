@@ -16,8 +16,8 @@ pro spexbinaryfit_plot, lambda, flux1, flux2, flux3, flux4, noise=noise, bw=bw, 
 
 !p.font=0
 !p.thick=4
-!x.thick=3
-!y.thick=3
+!x.thick=4
+!y.thick=4
 !p.multi=0
 csty = '!3'
 
@@ -26,11 +26,13 @@ if (n_elements(ytitle) eq 0) then ytitle='Normalized F!D!9l!7!N'
 if (n_elements(xrange) lt 2) then xrange =[0.9,2.4]
 if (n_elements(yrange) eq 0) then yrange =[-0.02,1.45]
 if (keyword_set(showdiff)) then yrange(0) = -0.1
-if (n_elements(pcolors) eq 0) then pcolors=[0,6,4,8,0,0]
+if (n_elements(pcolors) eq 0) then pcolors=[0,2,4,6,0,0]
 if (n_elements(lcolors) eq 0) then lcolors=pcolors
-lcolors = [lcolors[0:n_elements(labels)-2],0]
 noisecolor=150
+fillcolor=200
 diffcolor = 100
+
+wr = where(lambda ge xrange(0) and lambda le xrange(1))
 
 if (n_elements(outfile) gt 0) then begin
   set_plot, 'ps'
@@ -43,8 +45,9 @@ plot, [0],[0], xrange=xrange,yrange= yrange,/xsty,/ysty, xtitle=csty+xtitle, yti
 
 ; indicate fitting range
 if (n_elements(plotfitrange) ge 2) then begin
- for i=0,n_elements(plotfitrange(0,*))-1 do polyfill, [plotfitrange(0,i), plotfitrange(0,i), plotfitrange(1,i), plotfitrange(1,i), plotfitrange(0,i)],[0.98,1.0,1.0,0.98,0.98]*(yrange(1)-yrange(0))+yrange(0), color=200
+ for i=0,n_elements(plotfitrange(0,*))-1 do polyfill, [plotfitrange(0,i)>xrange(0), plotfitrange(0,i)>xrange(0), plotfitrange(1,i)<xrange(1), plotfitrange(1,i)<xrange(1), plotfitrange(0,i)>xrange(0)],[0.98,1.0,1.0,0.98,0.98]*(yrange(1)-yrange(0))+yrange(0), color=fillcolor
 endif
+oplot, [0,10],[0,0], linestyle=1
 
 oplot, lambda, flux1, color=pcolors(0), thick=4
  if (n_elements(flux2) gt 0) then begin
@@ -59,9 +62,12 @@ oplot, lambda, flux1, color=pcolors(0), thick=4
   oplot, lambda, flux4, color=pcolors(3), thick=4
   diff = flux1-flux4
  endif
+if (n_elements(noise) eq n_elements(lambda)) then begin
+ polyfill, [lambda(wr), reverse(lambda(wr))], [abs(noise(wr)),reverse((-1.*abs(noise(wr)))>yrange(0))], color=fillcolor
+ oplot, lambda, abs(noise), color=noisecolor
+ oplot, lambda, (-1.*abs(noise))>yrange(0), color=noisecolor
+endif
 if (keyword_set(showdiff)) then oplot, lambda, diff, color=diffcolor
-if (n_elements(noise) eq n_elements(lambda)) then oplot, lambda, noise, color=noisecolor
-oplot, [0,10],[0,0], linestyle=1
 
 if (n_elements(labels) gt 0) then begin
  if (keyword_set(right)) then $
@@ -75,21 +81,15 @@ if (keyword_set(inset)) then begin
  std = stddev(flux1(w))
  xrng = [1.5,1.74]
  yrng = [-1,1]*3.*std+med
-  plot, [0],[0], xrange=xrng, yrange=yrng,/xsty,/ysty, xtitle=csty+xtitle, charsize=0.9, xmargin=[75,10], ymargin=[37,7], /noerase
+  plot, [0],[0], xrange=xrng, yrange=yrng,/xsty,/ysty, xtitle=csty+xtitle, charsize=0.9, xmargin=[80,10], ymargin=[37,7], /noerase
   polyfill, [xrng(0),xrng(0),xrng(1),xrng(1),xrng(0)], [yrng(0),yrng(1),yrng(1),yrng(0),yrng(0)], color=1
  oplot, lambda, flux1, color=pcolors(0), thick=4
- if (n_elements(flux2) gt 0) then begin
+ if (n_elements(flux2) gt 0) then $
   oplot, lambda, flux2, color=pcolors(1), thick=4
-  diff = flux1-flux2
- endif
- if (n_elements(flux3) gt 0) then begin
+ if (n_elements(flux3) gt 0) then $
   oplot, lambda, flux3, color=pcolors(2), thick=4
-  diff = flux1-flux3
- endif
- if (n_elements(flux4) gt 0) then begin
+ if (n_elements(flux4) gt 0) then $
   oplot, lambda, flux4, color=pcolors(3), thick=4
-  diff = flux1-flux4
- endif
 endif
   
 if (n_elements(outfile) gt 0) then begin

@@ -34,8 +34,10 @@ if (keyword_set(weight)) then begin
 endif
   
 ; DEGREES OF FREEDOM
-dof = fix(total(wts(wfit))/max(wts(wfit)))-1.	; degrees of freedom  = # points -1
-dof = dof/5. 								; to roughly compensate for slit width
+if (n_elements(dof) eq 0) then begin
+ dof = fix(total(wts(wfit))/max(wts(wfit)))-1.	; degrees of freedom  = # points -1 
+ dof = dof/5. 								; to roughly compensate for slit width
+endif
 
 ; run comparisons
 ncomp = n_elements(cflx(0,*))
