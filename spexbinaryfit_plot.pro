@@ -12,7 +12,7 @@
 ; 	made sure noise spectrum was actually plotted
 ; -----------------------------------------------------------------------------------------------------
 
-pro spexbinaryfit_plot, lambda, flux1, flux2, flux3, flux4, noise=noise, bw=bw, labels=labels, pcolors=pcolors, lcolors=lcolors, outfile=outfile, xtitle=xtitle, ytitle=ytitle, yrange=yrange, xrange=xrange, right=right, inset=inset, note=note, plotfitrange=plotfitrange, showdiff=showdiff
+pro spexbinaryfit_plot, lam, flux1, flux2, flux3, flux4, noise=noise, bw=bw, labels=labels, pcolors=pcolors, lcolors=lcolors, outfile=outfile, xtitle=xtitle, ytitle=ytitle, yrange=yrange, xrange=xrange, right=right, inset=inset, note=note, plotfitrange=plotfitrange, showdiff=showdiff
 
 !p.font=0
 !p.thick=4
@@ -32,7 +32,7 @@ noisecolor=150
 fillcolor=200
 diffcolor = 100
 
-wr = where(lambda ge xrange(0) and lambda le xrange(1))
+wr = where(lam ge xrange(0) and lam le xrange(1))
 
 if (n_elements(outfile) gt 0) then begin
   set_plot, 'ps'
@@ -49,25 +49,25 @@ if (n_elements(plotfitrange) ge 2) then begin
 endif
 oplot, [0,10],[0,0], linestyle=1
 
-oplot, lambda, flux1, color=pcolors(0), thick=4
+oplot, lam, flux1, color=pcolors(0), thick=4
  if (n_elements(flux2) gt 0) then begin
-  oplot, lambda, flux2, color=pcolors(1), thick=4
+  oplot, lam, flux2, color=pcolors(1), thick=4
   diff = flux1-flux2
  endif
  if (n_elements(flux3) gt 0) then begin
-  oplot, lambda, flux3, color=pcolors(2), thick=4
+  oplot, lam, flux3, color=pcolors(2), thick=4
   diff = flux1-flux3
  endif
  if (n_elements(flux4) gt 0) then begin
-  oplot, lambda, flux4, color=pcolors(3), thick=4
+  oplot, lam, flux4, color=pcolors(3), thick=4
   diff = flux1-flux4
  endif
-if (n_elements(noise) eq n_elements(lambda)) then begin
- polyfill, [lambda(wr), reverse(lambda(wr))], [abs(noise(wr)),reverse((-1.*abs(noise(wr)))>yrange(0))], color=fillcolor
- oplot, lambda, abs(noise), color=noisecolor
- oplot, lambda, (-1.*abs(noise))>yrange(0), color=noisecolor
+if (n_elements(noise) eq n_elements(lam)) then begin
+ polyfill, [lam(wr), reverse(lam(wr))], [abs(noise(wr)),reverse((-1.*abs(noise(wr)))>yrange(0))], color=fillcolor
+ oplot, lam, abs(noise), color=noisecolor
+ oplot, lam, (-1.*abs(noise))>yrange(0), color=noisecolor
 endif
-if (keyword_set(showdiff)) then oplot, lambda, diff, color=diffcolor
+if (keyword_set(showdiff)) then oplot, lam, diff, color=diffcolor
 
 if (n_elements(labels) gt 0) then begin
  if (keyword_set(right)) then $
@@ -76,20 +76,20 @@ if (n_elements(labels) gt 0) then begin
 endif
  
 if (keyword_set(inset)) then begin
- w = where(lambda gt 1.55 and lambda lt 1.7)
+ w = where(lam gt 1.55 and lam lt 1.7)
  med = median(flux1(w))
  std = stddev(flux1(w))
  xrng = [1.5,1.74]
  yrng = [-1,1]*3.*std+med
   plot, [0],[0], xrange=xrng, yrange=yrng,/xsty,/ysty, xtitle=csty+xtitle, charsize=0.9, xmargin=[80,10], ymargin=[37,7], /noerase
   polyfill, [xrng(0),xrng(0),xrng(1),xrng(1),xrng(0)], [yrng(0),yrng(1),yrng(1),yrng(0),yrng(0)], color=1
- oplot, lambda, flux1, color=pcolors(0), thick=4
+ oplot, lam, flux1, color=pcolors(0), thick=4
  if (n_elements(flux2) gt 0) then $
-  oplot, lambda, flux2, color=pcolors(1), thick=4
+  oplot, lam, flux2, color=pcolors(1), thick=4
  if (n_elements(flux3) gt 0) then $
-  oplot, lambda, flux3, color=pcolors(2), thick=4
+  oplot, lam, flux3, color=pcolors(2), thick=4
  if (n_elements(flux4) gt 0) then $
-  oplot, lambda, flux4, color=pcolors(3), thick=4
+  oplot, lam, flux4, color=pcolors(3), thick=4
 endif
   
 if (n_elements(outfile) gt 0) then begin
