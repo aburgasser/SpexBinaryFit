@@ -116,7 +116,7 @@ plotfitrange = fitregions
 ; REQUIRES ACCESS TO ENTIRE LIBRARY
 ; fix this to also generate binary templates
 if (file_search(templatesingfile) eq '' or keyword_set(regenerate)) then begin
- spexbinaryfit_generate_library, dbfile=dbfile, datafolder=datafolder, pfold=pfold, usesplat=usesplat, splatfolder=splatfolder
+ spexbinaryfit_generate_library, dbfile=dbfile, datafolder=datafolder, pfold=pfold, usesplat=usesplat, splatfolder=splatfolder, filtfolder=pfold+'/filters/'
 endif
 
  ; PROCESS INPUT DATA

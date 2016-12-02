@@ -11,7 +11,7 @@
 ; - add output of template information to latex table
 ; -----------------------------------------------------------------------------------------------------
 
-savefile, pfold=pfold, dbfile=dbile, datafolder=datafolder, usesplat=usesplat, splatfolder=splatfolder, newobs=newobs
+savefile, pfold=pfold, dbfile=dbile, datafolder=datafolder, usesplat=usesplat, splatfolder=splatfolder, filtfolder=filtfolder, newobs=newobs
 
 on_error, 0
 
@@ -192,7 +192,7 @@ for i=0,ntemplates-1 do begin
    else noise(*,i) = flux(*,i)*0.+0.05		; guess for no noise measure
 
 ; DETERMINE MAGNITUDES   
- stdmags(*,i) = spexbinaryfit_filtflux(wave,flux(*,i),filters,1,/force,/silent)
+ stdmags(*,i) = spexbinaryfit_filtflux(wave,flux(*,i),filters,1,/force,/silent,filtfolder=filtfolder)
 
 ; DETERMINE SPEX SPECTRAL TYPE   
  spexbinaryfit_nirclassify, wave, flux(*,i), sp, spe, sps, sptinit = db.sptn(wtemplate(i))
